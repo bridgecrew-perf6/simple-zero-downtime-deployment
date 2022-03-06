@@ -1,22 +1,30 @@
-import fetch from "node-fetch";
+import fetch from 'node-fetch';
 
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function main() {
-    while(true) {
-        const res = await fetch('http://localhost:8000');
+  let counter = 1;
+  while (true) {
+    const date = new Date();
 
-        const date = new Date();
-        if(res.status === 200) {
-            console.log('OK at ' + date.toISOString());
+    fetch('http://localhost:8000?id=' + counter)
+      .then((res) => {
+        if (res.status === 200) {
+          console.log(res.body.read() + ' at ' + date.toISOString());
         } else {
-            console.error('Server is down! at '+ date.toISOString());
+          console.error('Server is down! at ' + date.toISOString());
         }
+      })
+      .catch((_) => {
+        console.error('Server is down! at ' + date.toISOString());
+      });
 
-        await sleep(1000);
-    }
+    counter++;
+
+    await sleep(1000);
+  }
 }
 
 main();

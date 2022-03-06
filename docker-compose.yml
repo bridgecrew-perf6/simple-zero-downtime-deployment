@@ -6,7 +6,8 @@ services:
       context: .
       dockerfile: ./dockers/api/Dockerfile
     restart: unless-stopped
-    command: yarn dev
+    # command: yarn dev
+    command: node src/index.js
     ports:
       - 3000
     networks:

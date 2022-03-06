@@ -21,8 +21,8 @@ server_status() {
 }
 
 update_server() {
-
   old_container_id=$(docker ps -f name=$service_name -q | tail -n1)
+  old_container_compose_id=$(docker compose ps -q $service_name | tail -n1)
 
   # create a new instance of the server
   docker-compose up --build -d --no-deps --scale $service_name=2 --no-recreate $service_name
@@ -50,11 +50,20 @@ update_server() {
   # reload nginx, so it can recognize the new instance
   reload_nginx
 
-  # remove old instance 
-  docker rm $old_container_id -f
+  # send signal to stop server
+  docker kill --signal=SIGINT $old_container_id
 
   # reload ngnix, so it stops routing requests to the old instance
   reload_nginx
+
+  # sleep until old server is down
+  while [[ ! -z $(docker port $old_container_compose_id) ]]; do
+    echo "Waiting for old container to stop..."
+    sleep 3
+  done
+
+  # remove old instance 
+  docker rm $old_container_id -f
 
   echo "DONE !"
 }
