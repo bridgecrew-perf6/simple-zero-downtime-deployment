@@ -1,5 +1,5 @@
-service_name=zdd_api
-nginx_container_name=zdd_nginx
+service_name=$1
+nginx_container_name=$2
 
 reload_nginx() {  
   docker exec $nginx_container_name /usr/sbin/nginx -s reload  
@@ -68,5 +68,31 @@ update_server() {
   echo "DONE !"
 }
 
+deploy() {
+  docker-compose up --build -d --no-deps --no-recreate
+
+  new_container_id=$(docker ps -f name=$service_name -q | head -n1)
+  new_container_port=$(docker port $new_container_id | cut -d " " -f3 | cut -d ":" -f2)
+
+  # sleep until server is up
+  while [[ $(server_status $new_container_port) > "404" ]]; do
+    echo "New instance is getting ready..."
+    sleep 3
+  done
+
+  # reload nginx, so it can recognize the new instance
+  reload_nginx
+}
+
+determine_deployment_strategy() {
+  if [[ -z $(docker ps -f name=$service_name -q | head -n1) ]]; then
+    echo "No server is up... use deploy strategy!"
+    deploy
+  else
+    echo "One server is up... use update strategy!"
+    update_server
+  fi
+}
+
 # call func
-update_server
+determine_deployment_strategy
